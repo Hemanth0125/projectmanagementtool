@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Management Tool</title>
+    <style>
+        /* Basic Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f6f8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .project, .task {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .project:last-child, .task:last-child {
+            border-bottom: none;
+        }
+
+        .actions button {
+            margin-right: 10px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .actions button:hover {
+            background-color: #2ecc71;
+        }
+
+        .comments {
+            margin-top: 15px;
+        }
+
+        .comments p {
+            margin: 5px 0;
+        }
+
+        .profile-pic {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Project Management Tool</h1>
+
+        <!-- Create Project -->
+        <div id="createProject">
+            <h2>Create Project</h2>
+            <div class="form-group">
+                <input type="text" id="projectName" placeholder="Enter project name">
+                <textarea id="projectDescription" placeholder="Enter project description"></textarea>
+                <button onclick="createProject()">Create Project</button>
+            </div>
+        </div>
+
+        <!-- Create Task -->
+        <div id="createTask">
+            <h2>Create Task</h2>
+            <div class="form-group">
+                <input type="text" id="taskTitle" placeholder="Enter task title">
+                <textarea id="taskDescription" placeholder="Enter task description"></textarea>
+                <input type="text" id="projectId" placeholder="Enter project ID">
+                <button onclick="createTask()">Create Task</button>
+            </div>
+        </div>
+
+        <!-- Projects and Tasks -->
+        <h2>Projects</h2>
+        <div id="projectsContainer"></div>
+
+        <h2>Tasks</h2>
+        <div id="tasksContainer"></div>
+    </div>
+
+    <script>
+        // JavaScript for Functionality
+
+        // Load data from localStorage
+        function loadData() {
+            const projects = JSON.parse(localStorage.getItem('projects')) || [];
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            renderProjects(projects);
+            renderTasks(tasks);
+        }
+
+        function createProject() {
+            const name = document.getElementById('projectName').value.trim();
+            const description = document.getElementById('projectDescription').value.trim();
+            if (name && description) {
+                const projects = JSON.parse(localStorage.getItem('projects')) || [];
+                const newProject = {
+                    id: new Date().toISOString(),
+                    name,
+                    description,
+                    tasks: []
+                };
+                projects.push(newProject);
+                localStorage.setItem('projects', JSON.stringify(projects));
+                document.getElementById('projectName').value = '';
+                document.getElementById('projectDescription').value = '';
+                renderProjects(projects);
+            }
+        }
+
+        function createTask() {
+            const title = document.getElementById('taskTitle').value.trim();
+            const description = document.getElementById('taskDescription').value.trim();
+            const projectId = document.getElementById('projectId').value.trim();
+            if (title && description && projectId) {
+                const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+                const projects = JSON.parse(localStorage.getItem('projects')) || [];
+                const project = projects.find(p => p.id === projectId);
+                if (project) {
+                    const newTask = {
+                        id: new Date().toISOString(),
+                        title,
+                        description,
+                        projectId,
+                        comments: []
+                    };
+                    tasks.push(newTask);
+                    project.tasks.push(newTask.id);
+                    localStorage.setItem('tasks', JSON.stringify(tasks));
+                    localStorage.setItem('projects', JSON.stringify(projects));
+                    document.getElementById('taskTitle').value = '';
+                    document.getElementById('taskDescription').value = '';
+                    document.getElementById('projectId').value = '';
+                    renderTasks(tasks);
+                } else {
+                    alert('Project not found.');
+                }
+            }
+        }
+
+        function renderProjects(projects) {
+            const projectsContainer = document.getElementById('projectsContainer');
+            projectsContainer.innerHTML = '';
+            projects.forEach(project => {
+                const projectElement = document.createElement('div');
+                projectElement.className = 'project';
+                projectElement.innerHTML = `
+                    <h3>${project.name}</h3>
+                    <p>${project.description}</p>
+                    <div>
+                        <button onclick="showTasks('${project.id}')">Show Tasks</button>
+                    </div>
+                `;
+                projectsContainer.appendChild(projectElement);
+            });
+        }
+
+        function renderTasks(tasks) {
+            const tasksContainer = document.getElementById('tasksContainer');
+            tasksContainer.innerHTML = '';
+            tasks.forEach(task => {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'task';
+                taskElement.innerHTML = `
+                    <h4>${task.title}</h4>
+                    <p>${task.description}</p>
+                    <div class="comments">
+                        <h5>Comments</h5>
+                        <textarea id="comment-${task.id}" placeholder="Add a comment"></textarea>
+                        <button onclick="addComment('${task.id}')">Add Comment</button>
+                        ${task.comments.map(comment => `<p>${comment}</p>`).join('')}
+                    </div>
+                `;
+                tasksContainer.appendChild(taskElement);
+            });
+        }
+
+        function showTasks(projectId) {
+            const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            const filteredTasks = tasks.filter(task => task.projectId === projectId);
+            renderTasks(filteredTasks);
+        }
+
+        function addComment(taskId) {
+            const commentInput = document.getElementById(`comment-${taskId}`);
+            const comment = commentInput.value.trim();
+            if (comment) {
+                const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.comments.push(comment);
+                    localStorage.setItem('tasks', JSON.stringify(tasks));
+                    commentInput.value = '';
+                    renderTasks(tasks);
+                }
+            }
+        }
+
+        window.onload = loadData; // Load data when page loads
+    </script>
+</body>
+</html>
